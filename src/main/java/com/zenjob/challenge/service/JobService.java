@@ -1,5 +1,6 @@
 package com.zenjob.challenge.service;
 
+import com.zenjob.challenge.dto.JobDto;
 import com.zenjob.challenge.entity.Job;
 import com.zenjob.challenge.entity.JobStatus;
 import com.zenjob.challenge.entity.Shift;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -47,6 +49,7 @@ public class JobService {
                 .companyId(UUID.randomUUID())
                 .startTime(date1.atTime(8, 0, 0).toInstant(ZoneOffset.UTC))
                 .endTime(date2.atTime(17, 0, 0).toInstant(ZoneOffset.UTC))
+                .status(JobStatus.ACTIVE)
                 .build();
         List<Shift> shifts = LongStream.range(0, ChronoUnit.DAYS.between(date1, date2))
                 .mapToObj(idx -> date1.plus(idx, ChronoUnit.DAYS))
@@ -55,6 +58,7 @@ public class JobService {
                         .job(job)
                         .startTime(date.atTime(8, 0, 0).toInstant(ZoneOffset.UTC))
                         .endTime(date.atTime(17, 0, 0).toInstant(ZoneOffset.UTC))
+                        .status(ShiftStatus.ACTIVE)
                         .build())
                 .collect(Collectors.toList());
         if(shifts.isEmpty()) {
@@ -65,20 +69,17 @@ public class JobService {
     }
 
     public List<Shift> getShifts(UUID id) {
+
         return shiftRepository.findAllByJobId(id);
+        //return shiftRepository.findAllByJobIdAndStatusNot(id, ShiftStatus.CANCELLED);
     }
 
 //    public void bookTalent(UUID talent, UUID shiftId) {
 //        shiftRepository.findById(shiftId).map(shift -> shiftRepository.save(shift.setTalentId(talent)));
 //    }
 
-    public void bookTalent(UUID talent, UUID shiftId) {
-        shiftRepository.findById(shiftId).ifPresent(shift -> {
-            logger.info("Before update: {}", shift);
-            shift.setTalentId(talent);
-            logger.info("After update: {}", shift);
-            shiftRepository.save(shift);
-        });
+    public void bookTalent(UUID shiftId, UUID talent) {
+        shiftRepository.findById(shiftId).map(shift -> shiftRepository.save(shift.setTalentId(talent)));
     }
     public void validateJobDates(LocalDate startDate, LocalDate endDate) {
         LocalDate today = LocalDate.now(ZoneId.systemDefault());
@@ -91,6 +92,7 @@ public class JobService {
     }
 
     public void cancelJob(UUID jobId) {
+        System.out.println("Job cancelled: " + jobId);
         Job job = jobRepository.findById(jobId).orElseThrow(() -> new IllegalArgumentException("Job not found"));
         job.setStatus(JobStatus.CANCELLED);
         jobRepository.save(job);
@@ -102,14 +104,31 @@ public class JobService {
         });
     }
 
-    public void cancelShift(UUID shiftId) {
+    @Transactional
+    public JobDto cancelShift(UUID shiftId) {
         Shift shift = shiftRepository.findById(shiftId).orElseThrow(() -> new IllegalArgumentException("Shift not found"));
         shift.setStatus(ShiftStatus.CANCELLED);
-        shiftRepository.save(shift);
+        shift = shiftRepository.save(shift);
+        shiftRepository.flush();
+
+        Job job = shift.getJob();
+        if (job.getShifts().stream().allMatch(s -> s.getStatus() == ShiftStatus.CANCELLED)) {
+            job.setStatus(JobStatus.CANCELLED);
+            jobRepository.save(job);
+        }
+
+        JobDto jobDto = new JobDto();
+        jobDto.setId(job.getId());
+        jobDto.setComanyId(job.getCompanyId());
+        jobDto.setStartTime(job.getStartTime());
+        jobDto.setEndTime(job.getEndTime());
+        jobDto.setStatus(job.getStatus());
+        return jobDto;
     }
 
-    public void cancelAndReplaceShiftsForTalent(UUID talentId) {
+    public List<Shift> cancelAndReplaceShiftsForTalent(UUID talentId) {
         List<Shift> shiftsForTalent = shiftRepository.findAllByTalentId(talentId);
+        List<Shift> replacementShifts = new ArrayList<>();
         shiftsForTalent.forEach(shift -> {
             // Cancel the shift
             shift.setStatus(ShiftStatus.CANCELLED);
@@ -121,8 +140,12 @@ public class JobService {
                     .job(shift.getJob())
                     .startTime(shift.getStartTime())
                     .endTime(shift.getEndTime())
+                    .status(ShiftStatus.ACTIVE)
+                    .talentId((talentId))
                     .build();
-            shiftRepository.save(replacementShift);
+            replacementShifts.add(replacementShift);
+        shiftRepository.save(replacementShift);
         });
+        return replacementShifts;
     }
 }

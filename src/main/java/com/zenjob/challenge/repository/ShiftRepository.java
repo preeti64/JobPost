@@ -13,4 +13,6 @@ public interface ShiftRepository extends JpaRepository<Shift, UUID> {
     List<Shift> findAllByJobId(UUID jobId);
 
     List<Shift> findAllByTalentId(UUID talentId);
+    List<Shift> findAllByJobIdAndTalentIdAndStatusNot(UUID jobId, ShiftStatus status);
+
 }

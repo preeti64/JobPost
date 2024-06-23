@@ -1,5 +1,6 @@
 package com.zenjob.challenge.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -34,6 +35,7 @@ public class Job {
     private Instant startTime;
     private Instant endTime;
 
+    @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "job", orphanRemoval = true)
     @Builder.Default
     private List<Shift> shifts = new ArrayList<>();

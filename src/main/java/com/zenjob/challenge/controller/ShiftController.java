@@ -1,12 +1,16 @@
 package com.zenjob.challenge.controller;
 
+import com.zenjob.challenge.dto.JobDto;
 import com.zenjob.challenge.dto.ResponseDto;
+import com.zenjob.challenge.entity.Job;
+import com.zenjob.challenge.entity.Shift;
 import com.zenjob.challenge.service.JobService;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -33,7 +37,7 @@ public class ShiftController {
     public ResponseDto<GetShiftsResponse> getShifts(@PathVariable("jobId") UUID uuid) {
         List<ShiftResponse> shiftResponses = jobService.getShifts(uuid).stream()
                 .map(shift -> ShiftResponse.builder()
-                        .id(uuid)
+                        .id(shift.getId())
                         .talentId(shift.getTalentId())
                         .jobId(shift.getJob().getId())
                         .start(shift.getCreatedAt())
@@ -53,16 +57,17 @@ public class ShiftController {
         jobService.bookTalent(shiftId, dto.talent);
     }
 
-    @PatchMapping(path = "/{id}/cancel")
-    @ResponseStatus(code = HttpStatus.NO_CONTENT)
-    public void cancelShift(@PathVariable("id") UUID shiftId) {
-        jobService.cancelShift(shiftId);
+    @PatchMapping(path = "/{shiftId}/cancel")
+    public ResponseEntity<JobDto> cancelShift(@PathVariable("shiftId") UUID shiftId) {
+
+        JobDto updatedJob = jobService.cancelShift(shiftId);
+        return ResponseEntity.ok(updatedJob);
     }
 
     @PatchMapping(path = "/cancelAndReplaceForTalent/{talentId}")
-    @ResponseStatus(code = HttpStatus.NO_CONTENT)
-    public void cancelAndReplaceShiftsForTalent(@PathVariable("talentId") UUID talentId) {
-        jobService.cancelAndReplaceShiftsForTalent(talentId);
+    public ResponseEntity<List<Shift>> cancelAndReplaceShiftsForTalent(@PathVariable("talentId") UUID talentId) {
+       List<Shift> updatedShifts =  jobService.cancelAndReplaceShiftsForTalent(talentId);
+       return ResponseEntity.ok(updatedShifts);
     }
 
     @NoArgsConstructor
