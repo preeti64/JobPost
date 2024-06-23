@@ -68,15 +68,16 @@ public class JobService {
         return jobRepository.save(job);
     }
 
-    public List<Shift> getShifts(UUID id) {
+    public List<Shift> getShifts(UUID jobId) {
 
-        return shiftRepository.findAllByJobId(id);
-        //return shiftRepository.findAllByJobIdAndStatusNot(id, ShiftStatus.CANCELLED);
+        //return shiftRepository.findAllByJobId(id);
+        return shiftRepository.findAllByJobIdAndStatusNot(jobId, ShiftStatus.CANCELLED);
     }
 
-//    public void bookTalent(UUID talent, UUID shiftId) {
-//        shiftRepository.findById(shiftId).map(shift -> shiftRepository.save(shift.setTalentId(talent)));
-//    }
+    public List<Shift> getShiftsForTalent(UUID jobId, UUID talentId) {
+        // Return only the shifts for the job that are not cancelled and are associated with the talent
+        return shiftRepository.findAllByJobIdAndTalentIdAndStatusNot(jobId, talentId, ShiftStatus.CANCELLED);
+    }
 
     public void bookTalent(UUID shiftId, UUID talent) {
         shiftRepository.findById(shiftId).map(shift -> shiftRepository.save(shift.setTalentId(talent)));
@@ -146,6 +147,6 @@ public class JobService {
             replacementShifts.add(replacementShift);
         shiftRepository.save(replacementShift);
         });
-        return replacementShifts;
+        return getShiftsForTalent(shiftsForTalent.get(0).getJob().getId(), talentId);
     }
 }
