@@ -41,4 +41,7 @@ public class Shift {
 
     @LastModifiedDate
     private Instant updatedAt;
+
+    @Enumerated(EnumType.STRING)
+    private ShiftStatus status;
 }

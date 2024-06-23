@@ -9,11 +9,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -35,6 +33,12 @@ public class JobController {
                         .jobId(job.getId())
                         .build())
                 .build();
+    }
+
+    @PatchMapping(path = "/{id}/cancel")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void cancelJob(@PathVariable("id") UUID jobId) {
+        jobService.cancelJob(jobId);
     }
 
     @NoArgsConstructor

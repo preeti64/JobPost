@@ -44,4 +44,7 @@ public class Job {
     @LastModifiedDate
     private Instant updatedAt;
 
+    @Enumerated(EnumType.STRING)
+    private JobStatus status;;
+
 }
