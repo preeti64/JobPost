@@ -68,7 +68,6 @@ public class ShiftController {
         }
         jobService.bookTalent(shiftId, dto.talent);
         return ResponseEntity.status((HttpStatus.OK)).build();
-        //jobService.bookTalent(shiftId, dto.talent);
     }
 
     @PatchMapping(path = "/{shiftId}/cancel")

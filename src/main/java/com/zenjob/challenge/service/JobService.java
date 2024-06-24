@@ -30,21 +30,13 @@ import java.util.stream.LongStream;
 @Repository
 @Transactional
 public class JobService {
-    private final JobRepository   jobRepository;
+    private final JobRepository jobRepository;
     private final ShiftRepository shiftRepository;
     private static final Logger logger = LoggerFactory.getLogger(JobService.class);
 
     public Job createJob(UUID uuid, LocalDate date1, LocalDate date2) {
         validateJobDates(date1, date2);
-        //The daysBetween check is used to ensure that the start and end dates are not the same,
-        // which would result in no shifts being created.
-        // However, if shifts are being created in another way that could potentially allow for a job
-        // with no shifts, then checking shifts.isEmpty() would be a more direct
-        // and accurate way to ensure that a job has at least one shift.
-     /*   long daysBetween = ChronoUnit.DAYS.between(date1, date2);
-        if (daysBetween < 1) {
-            throw new IllegalArgumentException("A job should have at least one shift");
-        }*/
+
         Job job = Job.builder()
                 .id(uuid)
                 .companyId(UUID.randomUUID())
@@ -62,21 +54,15 @@ public class JobService {
                         .status(ShiftStatus.ACTIVE)
                         .build())
                 .collect(Collectors.toList());
-//        if(shifts.isEmpty()) {
-//            throw new IllegalArgumentException("A job should have at least one shift");
-//        }
         job.setShifts(shifts);
         return jobRepository.save(job);
     }
 
     public List<Shift> getShifts(UUID jobId) {
-
-        //return shiftRepository.findAllByJobId(id);
         return shiftRepository.findAllByJobIdAndStatusNot(jobId, ShiftStatus.CANCELLED);
     }
 
     public List<Shift> getShiftsForTalent(UUID jobId, UUID talentId) {
-        // Return only the shifts for the job that are not cancelled and are associated with the talent
         return shiftRepository.findAllByJobIdAndTalentIdAndStatusNot(jobId, talentId, ShiftStatus.CANCELLED);
     }
 
@@ -91,6 +77,7 @@ public class JobService {
     public Job findJobById(UUID jobId) {
         return jobRepository.findById(jobId).orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + jobId));
     }
+
     public void validateJobDates(LocalDate startDate, LocalDate endDate) {
         LocalDate today = LocalDate.now(ZoneId.systemDefault());
         if (startDate.isBefore(today)) {
@@ -102,7 +89,6 @@ public class JobService {
     }
 
     public void cancelJob(UUID jobId) {
-        System.out.println("Job cancelled: " + jobId);
         Job job = jobRepository.findById(jobId).orElseThrow(() -> new ResourceNotFoundException("Job not found with id:" + jobId));
         job.setStatus(JobStatus.CANCELLED);
         jobRepository.save(job);
@@ -144,11 +130,9 @@ public class JobService {
         List<Shift> shiftsForTalent = shiftRepository.findAllByTalentId(talentId);
         List<Shift> replacementShifts = new ArrayList<>();
         shiftsForTalent.forEach(shift -> {
-            // Cancel the shift
             shift.setStatus(ShiftStatus.CANCELLED);
             shiftRepository.save(shift);
 
-            // Create a replacement shift
             Shift replacementShift = Shift.builder()
                     .id(UUID.randomUUID())
                     .job(shift.getJob())
@@ -158,7 +142,7 @@ public class JobService {
                     .talentId((talentId))
                     .build();
             replacementShifts.add(replacementShift);
-        shiftRepository.save(replacementShift);
+            shiftRepository.save(replacementShift);
         });
         return getShiftsForTalent(shiftsForTalent.get(0).getJob().getId(), talentId);
     }
