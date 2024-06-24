@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +37,6 @@ public class JobController {
 
     @PatchMapping(path = "/{jobId}/cancel")
     public ResponseEntity<Void> cancelJob(@PathVariable("jobId") UUID jobId) {
-        System.out.println("Job cancelled: " + jobId);
         jobService.cancelJob(jobId);
         return ResponseEntity.ok().build();
     }
@@ -48,13 +46,13 @@ public class JobController {
     @Data
     private static class RequestJobRequestDto {
         @NotNull
-        private UUID      companyId;
+        private UUID companyId;
         @NotNull
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         private LocalDate start;
         @NotNull
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-        private LocalDate   end;
+        private LocalDate end;
     }
 
     @Builder

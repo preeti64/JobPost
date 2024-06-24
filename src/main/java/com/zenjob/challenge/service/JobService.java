@@ -1,5 +1,6 @@
 package com.zenjob.challenge.service;
 
+import com.zenjob.challenge.controller.exceptions.ResourceNotFoundException;
 import com.zenjob.challenge.dto.JobDto;
 import com.zenjob.challenge.entity.Job;
 import com.zenjob.challenge.entity.JobStatus;
@@ -61,9 +62,9 @@ public class JobService {
                         .status(ShiftStatus.ACTIVE)
                         .build())
                 .collect(Collectors.toList());
-        if(shifts.isEmpty()) {
-            throw new IllegalArgumentException("A job should have at least one shift");
-        }
+//        if(shifts.isEmpty()) {
+//            throw new IllegalArgumentException("A job should have at least one shift");
+//        }
         job.setShifts(shifts);
         return jobRepository.save(job);
     }
@@ -82,6 +83,14 @@ public class JobService {
     public void bookTalent(UUID shiftId, UUID talent) {
         shiftRepository.findById(shiftId).map(shift -> shiftRepository.save(shift.setTalentId(talent)));
     }
+
+    public Shift findShiftById(UUID shiftId) {
+        return shiftRepository.findById(shiftId).orElseThrow(() -> new ResourceNotFoundException("Shift not found"));
+    }
+
+    public Job findJobById(UUID jobId) {
+        return jobRepository.findById(jobId).orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + jobId));
+    }
     public void validateJobDates(LocalDate startDate, LocalDate endDate) {
         LocalDate today = LocalDate.now(ZoneId.systemDefault());
         if (startDate.isBefore(today)) {
@@ -94,7 +103,7 @@ public class JobService {
 
     public void cancelJob(UUID jobId) {
         System.out.println("Job cancelled: " + jobId);
-        Job job = jobRepository.findById(jobId).orElseThrow(() -> new IllegalArgumentException("Job not found"));
+        Job job = jobRepository.findById(jobId).orElseThrow(() -> new ResourceNotFoundException("Job not found with id:" + jobId));
         job.setStatus(JobStatus.CANCELLED);
         jobRepository.save(job);
 
@@ -107,7 +116,7 @@ public class JobService {
 
     @Transactional
     public JobDto cancelShift(UUID shiftId) {
-        Shift shift = shiftRepository.findById(shiftId).orElseThrow(() -> new IllegalArgumentException("Shift not found"));
+        Shift shift = shiftRepository.findById(shiftId).orElseThrow(() -> new ResourceNotFoundException("Shift not found with id: " + shiftId));
         shift.setStatus(ShiftStatus.CANCELLED);
         shift = shiftRepository.save(shift);
         shiftRepository.flush();
@@ -125,6 +134,10 @@ public class JobService {
         jobDto.setEndTime(job.getEndTime());
         jobDto.setStatus(job.getStatus());
         return jobDto;
+    }
+
+    public List<Shift> findAllShiftsByTalentId(UUID talentId) {
+        return shiftRepository.findAllByTalentId(talentId);
     }
 
     public List<Shift> cancelAndReplaceShiftsForTalent(UUID talentId) {

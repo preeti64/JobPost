@@ -1,5 +1,6 @@
 package com.zenjob.challenge.controller;
 
+import com.zenjob.challenge.controller.exceptions.ResourceNotFoundException;
 import com.zenjob.challenge.dto.JobDto;
 import com.zenjob.challenge.dto.ResponseDto;
 import com.zenjob.challenge.entity.Job;
@@ -35,6 +36,10 @@ public class ShiftController {
     @GetMapping(path = "/{jobId}")
     @ResponseBody
     public ResponseDto<GetShiftsResponse> getShifts(@PathVariable("jobId") UUID uuid) {
+        Job job = jobService.findJobById(uuid);
+        if(job == null) {
+            throw new ResourceNotFoundException("Job not found with id : " + uuid);
+        }
         List<ShiftResponse> shiftResponses = jobService.getShifts(uuid).stream()
                 .map(shift -> ShiftResponse.builder()
                         .id(shift.getId())
@@ -44,6 +49,9 @@ public class ShiftController {
                         .end(shift.getEndTime())
                         .build())
                 .collect(Collectors.toList());
+        if(shiftResponses.isEmpty()) {
+           throw new IllegalArgumentException("A job should have at least one shift");
+        }
         return ResponseDto.<GetShiftsResponse>builder()
                 .data(GetShiftsResponse.builder()
                         .shifts(shiftResponses)
@@ -53,8 +61,14 @@ public class ShiftController {
 
     @PatchMapping(path = "/{id}/book")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
-    public void bookTalent(@PathVariable("id") UUID shiftId, @RequestBody @Valid ShiftController.BookTalentRequestDto dto) {
+    public ResponseEntity<Void> bookTalent(@PathVariable("id") UUID shiftId, @RequestBody @Valid ShiftController.BookTalentRequestDto dto) {
+        Shift shift = jobService.findShiftById(shiftId);
+        if (shift == null) {
+            throw new ResourceNotFoundException("Shift not found with id : " + shiftId);
+        }
         jobService.bookTalent(shiftId, dto.talent);
+        return ResponseEntity.status((HttpStatus.OK)).build();
+        //jobService.bookTalent(shiftId, dto.talent);
     }
 
     @PatchMapping(path = "/{shiftId}/cancel")
@@ -66,7 +80,11 @@ public class ShiftController {
 
     @PatchMapping(path = "/cancelAndReplaceForTalent/{talentId}")
     public ResponseEntity<List<Shift>> cancelAndReplaceShiftsForTalent(@PathVariable("talentId") UUID talentId) {
-       List<Shift> updatedShifts =  jobService.cancelAndReplaceShiftsForTalent(talentId);
+       List<Shift> shiftsForTalents = jobService.findAllShiftsByTalentId(talentId);
+       if(shiftsForTalents.isEmpty()) {
+           return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+       }
+        List<Shift> updatedShifts =  jobService.cancelAndReplaceShiftsForTalent(talentId);
        return ResponseEntity.ok(updatedShifts);
     }
 
