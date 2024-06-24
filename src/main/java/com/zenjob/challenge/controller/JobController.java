@@ -27,6 +27,9 @@ public class JobController {
     @PostMapping
     @ResponseBody
     public ResponseDto<RequestJobResponse> requestJob(@RequestBody @Valid RequestJobRequestDto dto) {
+        if(!dto.getEnd().isAfter(dto.getStart())) {
+            throw new IllegalArgumentException("End date should be after start date");
+        }
         Job job = jobService.createJob(UUID.randomUUID(), dto.start, dto.end);
         return ResponseDto.<RequestJobResponse>builder()
                 .data(RequestJobResponse.builder()
@@ -44,7 +47,7 @@ public class JobController {
     @NoArgsConstructor
     @AllArgsConstructor
     @Data
-    private static class RequestJobRequestDto {
+    public static class RequestJobRequestDto {
         @NotNull
         private UUID companyId;
         @NotNull

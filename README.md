@@ -14,6 +14,11 @@ To allow you to dive right into it, there is a simplified version of a job servi
 - Fetching the *shifts* for a specific *job*
 - Booking a *talent* to a *shift*
 
+### Tasks added by Preeti
+-Cancel a job
+-Cancel a shift
+-Cancel all shifts for a talent
+
 Feel free to adjust it as much as you like.
 
 ### Product boundary conditions
@@ -39,16 +44,30 @@ Your job is to modify the existing service so it satisfies the following require
 - **I CAN** cancel a *job* I ordered previously
 - **AND** if the *job* gets cancelled all of its *shifts* get cancelled as well
 
+### Status :Completed
+
 ### Task B
 
 - **AS** a *company*
 - **I CAN** cancel a single *shift* of a job I ordered previously
+
+### Status :Completed
 
 ### Task C
 
 - **AS** a *company*
 - **I CAN** cancel all of my shifts which were booked for a specific talent
 - **AND** replacement shifts are created with the same dates
+
+### Status :Completed
+
+## Testing
+
+Unit tests and integration tests have been written for the controllers and services.
+
+## Future Improvements
+- Add more comprehensive tests
+- Improve error handling
 
 ## Evaluation criteria
 
